@@ -46,11 +46,10 @@
 
 
 (deftest test-round-trip
-  (are [input decoded]
-      (= decoded (roundtrip input))
-    true  true
-    false false
-    1     1))
+  (testing "vector"
+    (is (= clojure.lang.PersistentVector (type (roundtrip []))))
+    (is (= [] (roundtrip [])))
+    (is (= [nil] (roundtrip [nil])))))
 
 
 (deftest test-vector-encoding

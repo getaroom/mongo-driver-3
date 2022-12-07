@@ -27,6 +27,14 @@
       {:tag (str "[L" (.getName resolved) ";")})))
 
 
+(defn read-value
+  [^BsonReader reader ^DecoderContext ctx ^BsonTypeCodecMap codec-map]
+  (let [t (.getCurrentBsonType reader)]
+    (condp = t
+      BsonType/NULL nil
+      )))
+
+
 (defn ^Codec vector-codec
   "Codec for clojure.lang.PersistentVector"
   [^CodecRegistry registry ^BsonTypeClassMap class-map {:as opts}]
@@ -43,15 +51,13 @@
         (.writeEndArray writer))
 
       (decode [_ reader ctx]
-        (println "decoding vector")
         (.readStartArray reader)
         (loop [coll (transient [])
                t    (.readBsonType reader)]
           (if (= t BsonType/END_OF_DOCUMENT)
             (do (.readEndArray reader)
                 (persistent! coll))
-            (do (println "recur on" t)
-                (recur (conj! coll (.decode (.get codec-map t) reader ctx)) (.readBsonType reader)))))))))
+            (recur (conj! coll (.decode (.get codec-map t) reader ctx)) (.readBsonType reader))))))))
 
 
 (defn ^Codec map-codec
@@ -102,3 +108,55 @@
         vector-provider     (codec-provider vector-codec clojure.lang.PersistentVector class-map opts)
         provider-registries (CodecRegistries/fromProviders (typed-array CodecProvider [vector-provider map-provider]))]
     (CodecRegistries/fromRegistries (typed-array CodecRegistry [provider-registries driver-default-registry]))))
+
+
+(comment
+  (require '[criterium.core :as crit])
+  (require '[mongo-driver-3.model :as m])
+
+  (require '[clojure.spec.gen.alpha :as gen])
+
+  (def (m/document [1 2 3]))
+  )
+
+
+(require '[clojure.spec.alpha :as s])
+(require '[clojure.spec.gen.alpha :as gen])
+
+
+
+;; primitives
+(s/def :bson/double (s/with-gen #(instance? org.bson.BsonDouble %) #(gen/fmap (fn [^Double d] (org.bson.BsonDouble. d)) (gen/double))))
+(s/def :bson/string (s/with-gen #(instance? org.bson.BsonString %) #(gen/fmap (fn [^String s] (org.bson.BsonString. s)) (gen/string))))
+(s/def :bson/object (s/map-of :bson/value :bson/value))
+(s/def :bson/array nil)
+(s/def :bson/binary-data nil)
+(s/def :bson/undefined nil)
+(s/def :bson/object-id nil)
+(s/def :bson/boolean nil)
+(s/def :bson/date nil)
+(s/def :bson/null nil)
+(s/def :bson/regex nil)
+(s/def :bson/db-pointer nil)
+(s/def :bson/javascript nil)
+(s/def :bson/symbol nil)
+(s/def :bson/javascript-with-code nil)
+(s/def :bson/int32 nil)
+(s/def :bson/timestamp nil)
+(s/def :bson/int64 nil)
+(s/def :bson/decimal128 nil)
+(s/def :bson/min-key nil)
+(s/def :bson/max-key nil)
+
+;; meta types
+(s/def :bson/number (s/or :double :bson/double
+                          :int32 :bson/int32
+                          :int64 :bson/int64
+                          :decimal128 :bson/decimal128))
+
+(s/def :bson/value (s/or :number :bson/number
+                         :string :bson/string
+                         :object :bson/object))
+
+;; (s/def :bson/string string?)
+;; (s/def :bson/object )
