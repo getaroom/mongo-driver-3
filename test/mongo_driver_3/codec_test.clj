@@ -5,7 +5,7 @@
             [clojure.walk :as walk])
   (:import (org.bson.codecs Codec EncoderContext DecoderContext)
            (org.bson.codecs.configuration CodecRegistry)
-           (org.bson Document BsonDocumentWriter BsonDocument BsonDocumentReader)))
+           (org.bson BsonType Document BsonDocumentWriter BsonDocument BsonDocumentReader)))
 
 
 (def default-registry (c/clojure-registry))
@@ -29,21 +29,25 @@
 (defn decode
   "Decodes x according to registry.  Assumes a BSON document with field root."
   ([^BsonDocument x]
-   (decode x clojure.lang.PersistentArrayMap default-registry))
-  ([^BsonDocument x t]
-   (decode x t default-registry))
-  ([^BsonDocument x t ^CodecRegistry registry]
+   (decode x default-registry))
+  ([^BsonDocument x ^CodecRegistry registry]
    (let [ctx    (.build (DecoderContext/builder))
-         codec  (.get registry t)
+         codec  (.get registry clojure.lang.PersistentArrayMap)
          reader (BsonDocumentReader. x)]
      (.decodeWithChildContext ctx codec reader))))
 
 
-(defn roundtrip [value]
-  (-> value
-      encode
-      decode
-      :root))
+(defn roundtrip
+  "Encodes & decodes value according to registry"
+  ([value]
+   (roundtrip value default-registry))
+  ([value registry]
+   (-> value
+       (encode registry)
+       (decode registry)
+       vals
+       first)))
+
 
 (defn types [x]
   (walk/postwalk #(if (instance? clojure.lang.MapEntry %) % [(type %) %]) x))
@@ -56,7 +60,17 @@
     (is (= [[]] (roundtrip [[]])))
     (is (= [clojure.lang.PersistentVector [[clojure.lang.PersistentVector []]]] (types (roundtrip [[]])))))
   (testing "map"
-    (is (= {:k "v"} (roundtrip (hash-map "k" "v"))))))
+    (is (= {"k" "v"} (roundtrip (hash-map "k" "v") (c/clojure-registry c/default-bson-types {:keyword? false}))))
+    (is (= {:k "v"} (roundtrip (hash-map "k" "v") (c/clojure-registry c/default-bson-types {:keyword? true}))))
+    (is (= {:k "v"} (roundtrip (hash-map "k" "v"))))
+    (is (= {:k "v"} (roundtrip (array-map "k" "v"))))
+    (is (= {} (roundtrip (array-map))))
+    (is (= {:x nil} (roundtrip {:x nil})))
+    (is (= [clojure.lang.PersistentArrayMap {[clojure.lang.Keyword :k] [clojure.lang.PersistentArrayMap {}]}]
+           (types (roundtrip (hash-map :k (array-map)))))))
+  (testing "keyword"
+    (is (= "keyword" (roundtrip :keyword)))
+    (is (thrown? java.lang.AssertionError (roundtrip :keyword (c/clojure-registry (assoc c/default-bson-types BsonType/STRING clojure.lang.Keyword)))))))
 
 
 (deftest test-encoding
@@ -64,13 +78,4 @@
 
 
 (deftest test-decoding
-  )
-
-
-(comment
-
-  (require '[mongo-driver-3.client :as client])
-  (require '[mongo-driver-3.collection :as mc])
-  (def client (client/create))
-  (def db (client/get-db client "availability_preprod"))
   )

@@ -1,9 +1,10 @@
 (ns mongo-driver-3.bson
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen])
-  (:import (org.bson BsonDouble BsonString BsonDocument BsonBoolean BsonNull BsonRegularExpression
+  (:import (org.bson Document BsonDouble BsonString BsonDocumentReader BsonDocument BsonBoolean BsonNull BsonRegularExpression
                      BsonDateTime BsonTimestamp BsonObjectId BsonArray BsonJavaScript
                      BsonDecimal128 BsonInt32 BsonInt64 BsonMinKey BsonMaxKey BsonBinary)
+           (org.bson.codecs DecoderContext DocumentCodec)
            (org.bson.types Decimal128)
            (java.util Random)))
 
@@ -15,12 +16,15 @@
 
 ;; primitives
 (s/def :bson/double (s/with-gen #(instance? BsonDouble %)
-                      #(gen/fmap (fn [^Double d] (BsonDouble. d)) (gen/double))))
+                      #(gen/fmap (fn [^Double d] (BsonDouble. d))
+                                 (gen/double))))
 (s/def :bson/string (s/with-gen #(instance? BsonString %)
-                      #(gen/fmap (fn [^String s] (BsonString. s)) (gen/string))))
+                      #(gen/fmap (fn [^String s]
+                                   (BsonString. s))
+                                 (gen/string))))
 
 
-(s/def ::document (s/map-of string? :bson/value))
+(s/def ::document (s/map-of string? :bson/value :gen-max 8))
 
 
 (s/def :bson/object (s/with-gen #(instance? BsonDocument %)
@@ -31,7 +35,8 @@
                                      document))
                                  (s/gen ::document))))
 (s/def :bson/array (s/with-gen #(instance? BsonArray %)
-                     #(gen/fmap (fn [coll] (BsonArray. coll)) (s/gen (s/coll-of :bson/value :gen-max 20)))))
+                     #(gen/fmap (fn [coll] (BsonArray. coll))
+                                (s/gen (s/coll-of :bson/value :gen-max 20)))))
 
 (def ^Random random (Random. 42))
 (s/def :bson/bin-data
@@ -85,3 +90,7 @@
                          :timestamp :bson/timestamp
                          :min-key   :bson/min-key
                          :max-key   :bson/max-key))
+
+
+(defn to-document [^BsonDocument document]
+  (.decode (DocumentCodec.) (BsonDocumentReader. document) (.build (DecoderContext/builder))))

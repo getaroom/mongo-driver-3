@@ -13,8 +13,14 @@
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.11.1"]
                                   ;;[org.mongodb/mongodb-driver-sync "4.7.1"]
 
+                                  ;; https://mvnrepository.com/artifact/org.xerial.snappy/snappy-java
+                                  [org.xerial.snappy/snappy-java "1.1.8.4"]
+
+
                                   ;; temporary benchmark
                                   [criterium "0.4.6"]
                                   [org.clojure/test.check "0.9.0"]
                                   [org.mongodb/mongodb-driver-sync "3.12.11"]
-                                  [com.novemberain/monger "3.5.0"]]}})
+                                  [org.mongodb/mongodb-driver "3.12.11"]
+                                  [com.novemberain/monger "3.5.0"]
+                                  [joda-time "2.10.2"]]}})
