@@ -1,13 +1,14 @@
 (ns mongo-driver-3.codec-test
   (:require [clojure.test :refer :all]
             [mongo-driver-3.codec :as c]
-            [mongo-driver-3.model :as m])
+            [mongo-driver-3.model :as m]
+            [clojure.walk :as walk])
   (:import (org.bson.codecs Codec EncoderContext DecoderContext)
            (org.bson.codecs.configuration CodecRegistry)
            (org.bson Document BsonDocumentWriter BsonDocument BsonDocumentReader)))
 
 
-(def default-registry (c/clojure-registry c/bson-types))
+(def default-registry (c/clojure-registry))
 
 
 (defn ^BsonDocument encode
@@ -44,17 +45,26 @@
       decode
       :root))
 
+(defn types [x]
+  (walk/postwalk #(if (instance? clojure.lang.MapEntry %) % [(type %) %]) x))
+
 
 (deftest test-round-trip
   (testing "vector"
     (is (= clojure.lang.PersistentVector (type (roundtrip []))))
     (is (= [] (roundtrip [])))
-    (is (= [nil] (roundtrip [nil])))))
+    (is (= [[]] (roundtrip [[]])))
+    (is (= [clojure.lang.PersistentVector [[clojure.lang.PersistentVector []]]] (types (roundtrip [[]])))))
+  (testing "map"
+    (is (= {:k "v"} (roundtrip (hash-map "k" "v"))))))
 
 
-(deftest test-vector-encoding
-  (let []
-    ))
+(deftest test-encoding
+  )
+
+
+(deftest test-decoding
+  )
 
 
 (comment

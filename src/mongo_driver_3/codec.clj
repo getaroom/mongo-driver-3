@@ -9,33 +9,10 @@
 (set! *warn-on-reflection* true)
 
 
-(def bson-types
-  {BsonType/ARRAY      clojure.lang.PersistentVector
-   BsonType/INT32      java.lang.Long
-   BsonType/DECIMAL128 java.math.BigDecimal
-   BsonType/DOCUMENT   clojure.lang.PersistentArrayMap})
-
-
 (def driver-default-registry (MongoClientSettings/getDefaultCodecRegistry))
 
 
-(defmacro typed-array
-  [klass coll]
-  (let [^Class resolved (resolve klass)]
-    (with-meta
-      (list 'into-array resolved coll)
-      {:tag (str "[L" (.getName resolved) ";")})))
-
-
-(defn read-value
-  [^BsonReader reader ^DecoderContext ctx ^BsonTypeCodecMap codec-map]
-  (let [t (.getCurrentBsonType reader)]
-    (condp = t
-      BsonType/NULL nil
-      )))
-
-
-(defn ^Codec vector-codec
+(defn ^Codec sequential-codec
   "Codec for clojure.lang.PersistentVector"
   [^CodecRegistry registry ^BsonTypeClassMap class-map {:as opts}]
   (let [codec-map (BsonTypeCodecMap. class-map registry)]
@@ -61,7 +38,7 @@
 
 
 (defn ^Codec map-codec
-  "Codec for clojure.lang.PersistentArrayMap"
+  "Codec for clojure.lang.APersistent"
   [^CodecRegistry registry ^BsonTypeClassMap class-map {:keys [keyword?] :or {keyword? true}}]
   (let [codec-map (BsonTypeCodecMap. class-map registry)]
     (reify Codec
@@ -98,13 +75,39 @@
       (when (= t clazz)
         (f registry class-map opts)))))
 
+(def default-bson-types
+  {BsonType/ARRAY      clojure.lang.PersistentVector
+   BsonType/INT32      java.lang.Long
+   BsonType/DECIMAL128 java.math.BigDecimal
+   BsonType/DOCUMENT   clojure.lang.PersistentArrayMap})
+
+
+(def default-sequential-types
+  [clojure.lang.PersistentVector])
+
+
+(def default-map-types
+  [clojure.lang.PersistentArrayMap
+   clojure.lang.PersistentHashMap])
+
+
+(defmacro typed-array
+  [klass coll]
+  (let [^Class resolved (resolve klass)]
+    (with-meta
+      (list 'into-array resolved coll)
+      {:tag (str "[L" (.getName resolved) ";")})))
+
 
 (defn ^CodecRegistry clojure-registry
-  "Returns a CodecRegistry for encoding/decoding Clojure data types"
-  [bson-type-map]
-  (let [opts                {}
-        class-map           (BsonTypeClassMap. bson-type-map)
-        map-provider        (codec-provider map-codec clojure.lang.PersistentArrayMap class-map opts)
-        vector-provider     (codec-provider vector-codec clojure.lang.PersistentVector class-map opts)
-        provider-registries (CodecRegistries/fromProviders (typed-array CodecProvider [vector-provider map-provider]))]
-    (CodecRegistries/fromRegistries (typed-array CodecRegistry [provider-registries driver-default-registry]))))
+  "Returns a CodecRegistry for encoding/decoding Clojure data types.  bson-type-map, a map overrides decoding behavior of BSON types."
+  ([]
+   (clojure-registry default-bson-types {}))
+  ([bson-type-map {:keys [map-classes sequential-classes] :as opts
+                   :or {map-classes      default-map-types
+                        sequential-types default-sequential-types}}]
+   (let [class-map            (BsonTypeClassMap. bson-type-map)
+         map-providers        (map #(codec-provider map-codec % class-map opts) map-classes)
+         sequential-providers (map #(codec-provider sequential-codec % class-map opts) sequential-classes)
+         provider-registries  (CodecRegistries/fromProviders (typed-array CodecProvider (concat sequential-providers map-providers)))]
+     (CodecRegistries/fromRegistries (typed-array CodecRegistry [provider-registries driver-default-registry])))))
