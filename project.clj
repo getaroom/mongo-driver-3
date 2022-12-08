@@ -11,6 +11,10 @@
   :plugins [[lein-cljfmt "0.6.4"]]
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.11.1"]
-                                  [org.mongodb/mongodb-driver-sync "4.7.1"]
+                                  ;;[org.mongodb/mongodb-driver-sync "4.7.1"]
+
+                                  ;; temporary benchmark
                                   [criterium "0.4.6"]
-                                  [org.clojure/test.check "0.9.0"]]}})
+                                  [org.clojure/test.check "0.9.0"]
+                                  [org.mongodb/mongodb-driver-sync "3.12.11"]
+                                  [com.novemberain/monger "3.5.0"]]}})
