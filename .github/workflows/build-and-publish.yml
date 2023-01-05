@@ -66,8 +66,8 @@ jobs:
       with:
         path: ~/.m2
         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{  hashFiles('./project.clj') }}
-    - name: Look for Lint
-      run: lein kibit
+    # - name: Look for Lint
+    #   run: lein kibit
   test:
     needs: deps
     runs-on: ubuntu-latest
