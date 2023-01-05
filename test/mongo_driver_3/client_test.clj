@@ -87,10 +87,10 @@
           _  (mc/create db "test")]
       (with-open [session (mg/start-session @client)]
         (is (= 2 (mg/with-transaction session
-                                      (fn []
-                                        (mc/insert-one db "test" {:a 1} {:session session})
-                                        (mc/insert-one db "test" {:a 2} {:session session})
-                                        (mc/count-documents db "test" {} {:session session}))))))))
+                   (fn []
+                     (mc/insert-one db "test" {:a 1} {:session session})
+                     (mc/insert-one db "test" {:a 2} {:session session})
+                     (mc/count-documents db "test" {} {:session session}))))))))
 
   (deftest ^:integration test-with-implicit-transaction
     (testing "passing"
@@ -119,9 +119,9 @@
             _  (mc/create db "test")]
         (with-open [session (mg/start-session @client)]
           (is (= 2 (mg/with-transaction session
-                                        (fn []
-                                          (mc/insert-one db "test" {:a 1} {:session session})
-                                          (mc/insert-one db "test" {:a 2} {:session session})
+                     (fn []
+                       (mc/insert-one db "test" {:a 1} {:session session})
+                       (mc/insert-one db "test" {:a 2} {:session session})
                        (mc/count-documents db "test" {} {:session session}))))))))
 
     (testing "failing"
