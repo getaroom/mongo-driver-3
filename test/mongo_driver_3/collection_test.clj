@@ -21,7 +21,9 @@
 
 (defn new-db
   [client]
-  (mg/get-db client (.toString (UUID/randomUUID))))
+  (let [db-name (.toString (UUID/randomUUID))]
+    (println "db-name " db-name)
+    (mg/get-db client db-name)))
 
 (deftest ^:integration test-insert-one
   (testing "basic insertion"

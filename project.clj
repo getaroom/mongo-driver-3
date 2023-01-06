@@ -1,4 +1,4 @@
-(defproject mongo-driver-3 "0.7.0"
+(defproject mongo-driver-3 "0.7.0-getaroom-debug"
   :description "A Clojure wrapper for the Java MongoDB driver 3.11/4.0+."
   :url "https://github.com/gnarroway/mongo-driver-3"
   :license {:name         "The MIT License"
@@ -9,6 +9,8 @@
                                     :password      :env/clojars_pass
                                     :sign-releases false}]]
   :plugins [[lein-cljfmt "0.6.4"]]
+
+  :dependencies [[clj-time "0.15.0" :exclusions [joda-time]]]
 
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.11.1"]
                                   ;;[org.mongodb/mongodb-driver-sync "4.7.1"]

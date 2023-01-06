@@ -1,4 +1,5 @@
 (ns mongo-driver-3.codec
+  (:require [clj-time.coerce :as coerce])
   (:import (org.bson BsonType Document BsonWriter BsonReader)
            (org.bson.codecs BsonNullCodec Codec EncoderContext DecoderContext BsonTypeClassMap BsonTypeCodecMap)
            (org.bson.codecs.configuration CodecRegistry CodecRegistries CodecProvider)
@@ -30,6 +31,16 @@
     (decode [_ reader ctx]
       (assert false "decoding BSON values as clojure.lang.Keyword is not implemented"))))
 
+(defmethod mongo-codec org.joda.time.DateTime
+  [t _ _ opts]
+  (reify Codec
+    (getEncoderClass [_] t)
+
+    (encode [_ writer x _]
+      (.writeDateTime writer (coerce/to-long x)))
+
+    (decode [_ reader ctx]
+      (coerce/from-long (.readDateTime reader)))))
 
 (defmethod mongo-codec clojure.lang.APersistentVector
   [^Class t ^CodecRegistry registry ^BsonTypeClassMap class-map _]
@@ -87,9 +98,9 @@
                       (.decode (.get codec-map t) reader ctx))]
               (recur (assoc! doc k v) (.readBsonType reader)))))))))
 
-
 (def default-bson-types
   {BsonType/ARRAY      clojure.lang.PersistentVector
+   BsonType/DATE_TIME  org.joda.time.DateTime
    BsonType/INT32      java.lang.Long
    BsonType/DECIMAL128 java.math.BigDecimal
    BsonType/DOCUMENT   clojure.lang.PersistentArrayMap})

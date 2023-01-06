@@ -1,9 +1,11 @@
 (ns mongo-driver-3.codec-test
   (:require [clojure.test :refer :all]
+            [clj-time.core]
             [mongo-driver-3.codec :as c]
             [mongo-driver-3.model :as m]
             [clojure.walk :as walk])
-  (:import (org.bson.codecs Codec EncoderContext DecoderContext)
+  (:import (org.joda.time DateTime)
+           (org.bson.codecs Codec EncoderContext DecoderContext)
            (org.bson.codecs.configuration CodecRegistry)
            (org.bson BsonType Document BsonDocumentWriter BsonDocument BsonDocumentReader)))
 
@@ -70,7 +72,10 @@
            (types (roundtrip (hash-map :k (array-map)))))))
   (testing "keyword"
     (is (= "keyword" (roundtrip :keyword)))
-    (is (thrown? java.lang.AssertionError (roundtrip :keyword (c/clojure-registry (assoc c/default-bson-types BsonType/STRING clojure.lang.Keyword)))))))
+    (is (thrown? java.lang.AssertionError (roundtrip :keyword (c/clojure-registry (assoc c/default-bson-types BsonType/STRING clojure.lang.Keyword))))))
+  (testing "date-time"
+    (let [x (DateTime.)]
+      (is (clj-time.core/equal? x (roundtrip x))))))
 
 
 (deftest test-encoding
