@@ -16,7 +16,7 @@
 
 (defn read-dates-as-instants! []
   (extend-protocol ConvertToDocument
-    Date 
+    Date
     (from-document [input _]
       (.toInstant ^Date input))))
 

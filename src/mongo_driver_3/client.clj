@@ -145,7 +145,6 @@
                        (execute [_] (body)))
                      (->TransactionOptions opts))))
 
-
 (def ^:dynamic *session* nil)
 
 (defn with-implicit-transaction

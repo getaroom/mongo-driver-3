@@ -72,9 +72,9 @@
          it                     (cond-> (if session
                                           (.aggregate (collection db coll opts) session ^List (map document pipeline))
                                           (.aggregate (collection db coll opts) ^List (map document pipeline)))
-                                        (some? allow-disk-use?) (.allowDiskUse allow-disk-use?)
-                                        (some? bypass-document-validation?) (.bypassDocumentValidation bypass-document-validation?)
-                                        batch-size (.batchSize batch-size))]
+                                  (some? allow-disk-use?) (.allowDiskUse allow-disk-use?)
+                                  (some? bypass-document-validation?) (.bypassDocumentValidation bypass-document-validation?)
+                                  batch-size (.batchSize batch-size))]
 
      (if-not raw?
        (map (fn [x] (from-document x keywordize?)) (seq it))
@@ -202,10 +202,10 @@
            it                     (cond-> (if session
                                             (.find (collection db coll opts) session (document q))
                                             (.find (collection db coll opts) (document q)))
-                                          limit (.limit limit)
-                                          skip (.skip skip)
-                                          sort (.sort (document sort))
-                                          projection (.projection (document projection)))]
+                                    limit (.limit limit)
+                                    skip (.skip skip)
+                                    sort (.sort (document sort))
+                                    projection (.projection (document projection)))]
 
        (if-not raw?
          (map (fn [x] (from-document x keywordize?)) (seq it))
